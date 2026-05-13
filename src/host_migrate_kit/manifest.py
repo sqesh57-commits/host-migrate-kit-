@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from .collectors.host import collect_host_inventory
+from .collectors.paths import collect_path_metadata
 from .gapcheck import run_gap_check
 
 
@@ -34,6 +35,7 @@ def build_manifest() -> dict:
             },
         },
         "runtime": inventory["runtime"],
+        "paths": collect_path_metadata(),
         "checks": inventory["checks"],
         "gap_check": gap_check,
         "warnings": [gap["code"] for gap in gap_check["gaps"]],

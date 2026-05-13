@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from .manifest import build_manifest
+from .report import build_human_report
 
 DEFAULT_DIRS = [
     "/etc",
@@ -45,9 +46,13 @@ def build_bundle_layout(output_dir: Path) -> dict:
     report_path = root / "reports" / "bundle-plan.json"
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
+    human_report_path = root / "reports" / "summary.md"
+    human_report_path.write_text(build_human_report(), encoding="utf-8")
+
     checksums = {
         "manifest/manifest.json": sha256_file(manifest_path),
         "reports/bundle-plan.json": sha256_file(report_path),
+        "reports/summary.md": sha256_file(human_report_path),
     }
     checksum_path = root / "manifest" / "checksums.json"
     checksum_path.write_text(json.dumps(checksums, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -58,6 +63,7 @@ def build_bundle_layout(output_dir: Path) -> dict:
         "manifest_path": str(manifest_path),
         "report_path": str(report_path),
         "checksum_path": str(checksum_path),
+        "human_report_path": str(human_report_path),
         "included_paths": included,
     }
 
