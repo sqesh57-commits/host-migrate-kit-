@@ -7,6 +7,7 @@ from pathlib import Path
 from .collectors.host import collect_host_inventory, collect_host_summary
 from .bundle import build_bundle_layout
 from .gapcheck import run_gap_check
+from .compat import run_compat_check
 from .manifest import build_manifest
 from .preflight import run_preflight
 from .schema import validate_manifest
@@ -55,6 +56,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     preflight = sub.add_parser("preflight", help="Проверить runtime-совместимость хоста для восстановления")
     preflight.add_argument("--pretty", action="store_true", help="Форматировать JSON с отступами")
+
+    compat = sub.add_parser("compat-check", help="Сверить target runtime с ролями и ожиданиями manifest")
+    compat.add_argument("--pretty", action="store_true", help="Форматировать JSON с отступами")
 
     return parser
 
@@ -109,6 +113,12 @@ def main() -> int:
 
     if args.command == "preflight":
         report = run_preflight()
+        text = json.dumps(report, ensure_ascii=False, indent=2 if args.pretty else None)
+        print(text)
+        return 0
+
+    if args.command == "compat-check":
+        report = run_compat_check()
         text = json.dumps(report, ensure_ascii=False, indent=2 if args.pretty else None)
         print(text)
         return 0
