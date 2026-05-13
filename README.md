@@ -1,6 +1,30 @@
 # host-migrate-kit-
 
-`host-migrate-kit-` — это переносимый набор инструментов для аудита Debian-oriented VPS, сбора критически важных конфигураций и данных, а также подготовки relocation bundle для быстрого восстановления на новом чистом сервере.
+`host-migrate-kit-` — это переносимый набор инструментов для аудита Debian-oriented VPS, сбора критически важных конфигураций и данных и подготовки relocation bundle для восстановления на другом чистом сервере.
+
+## Коротко
+
+Проект уже умеет:
+- собирать audit и inventory хоста
+- строить manifest
+- выполнять readiness / compatibility checks
+- собирать dry-run relocation bundle
+- строить dry-run restore/apply plan
+- проверять базовую полноту bundle и backup-readiness слоя
+
+На текущем этапе это:
+- инструмент подготовки к миграции
+- инструмент инвентаризации и bundle planning
+- инструмент dry-run восстановления
+
+Но это ещё не fully automatic restore system.
+
+## С чего начать
+
+Если нужен быстрый вход:
+1. открыть `QUICKSTART.md`
+2. затем посмотреть `docs/INDEX.md`
+3. для деталей обратиться к `TZ.md`, `ROADMAP.md`, `MVP_STATUS.md`
 
 ## Что это?
 
@@ -386,7 +410,13 @@ hmk verify-bundle ./dist/<bundle-id> --pretty
 - автоматический restore без проверки человеком
 - попытка сразу поддерживать все Linux-дистрибутивы
 
-## Ближайшие документы
+## Навигация по документам
 
+- `QUICKSTART.md` — короткий старт
 - `TZ.md` — подробное техническое задание
-- `ROADMAP.md` — этапы реализации
+- `ROADMAP.md` — roadmap проекта
+- `MVP_STATUS.md` — текущее состояние MVP
+- `MVP_SUMMARY_2026-05-13.md` — фиксация MVP milestone
+- `BATTLE_TEST_REPORT_2026-05-13.md` — боевой тест на усложнённом стенде
+- `NEXT_STEPS.md` — ближайшие шаги
+- `docs/INDEX.md` — краткий индекс документации
