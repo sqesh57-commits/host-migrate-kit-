@@ -8,6 +8,7 @@ from .collectors.host import collect_host_inventory
 from .collectors.paths import collect_path_metadata
 from .gapcheck import run_gap_check
 from .policy import build_capture_policy
+from .servicemap import build_service_to_data_map
 
 
 def build_manifest() -> dict:
@@ -42,6 +43,7 @@ def build_manifest() -> dict:
         "apps": collect_app_paths(),
         "capture_policy": build_capture_policy(),
         "data_classification": build_data_classification(),
+        "service_to_data_map": build_service_to_data_map(),
         "checks": inventory["checks"],
         "gap_check": gap_check,
         "warnings": [gap["code"] for gap in gap_check["gaps"]],

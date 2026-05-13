@@ -57,6 +57,19 @@ def build_human_report() -> str:
 
     lines += [
         '',
+        '## Service to data map',
+    ]
+    for item in manifest['service_to_data_map']:
+        lines.append(f"- {item['service']} ({item['role']}): class={item['backup_class']}")
+        if item['config_paths']:
+            lines.append(f"  - config: {', '.join(item['config_paths'])}")
+        if item['data_paths']:
+            lines.append(f"  - data: {', '.join(item['data_paths'])}")
+        if item['secret_paths']:
+            lines.append(f"  - secrets: {', '.join(item['secret_paths'])}")
+
+    lines += [
+        '',
         '## Gap check',
         f"- Status: {manifest['gap_check']['status']}",
         f"- Gap count: {manifest['gap_check']['gap_count']}",
