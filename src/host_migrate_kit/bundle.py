@@ -7,7 +7,8 @@ from pathlib import Path
 
 from .manifest import build_manifest
 from .report import build_human_report
-from .staging import collect_crontab, collect_systemd_units, write_staging_index
+from .restore import build_restore_guide
+from .staging import collect_crontab, collect_safe_etc_files, collect_systemd_units, write_staging_index
 
 DEFAULT_DIRS = [
     "/etc",
@@ -62,11 +63,15 @@ def build_bundle_layout(output_dir: Path) -> dict:
     staging_dir = root / 'staging'
     systemd_info = collect_systemd_units(staging_dir / 'systemd', DEFAULT_UNITS)
     crontab_info = collect_crontab(staging_dir / 'cron')
+    etc_info = collect_safe_etc_files(staging_dir / 'etc')
+    restore_guide_path = root / 'reports' / 'restore-guide.md'
+    restore_guide_path.write_text(build_restore_guide(), encoding='utf-8')
     staging_index_path = write_staging_index(
         staging_dir,
         {
             'systemd_units': systemd_info,
             'crontab': crontab_info,
+            'safe_etc_files': etc_info,
         },
     )
 
@@ -74,6 +79,7 @@ def build_bundle_layout(output_dir: Path) -> dict:
         "manifest/manifest.json": sha256_file(manifest_path),
         "reports/bundle-plan.json": sha256_file(report_path),
         "reports/summary.md": sha256_file(human_report_path),
+        "reports/restore-guide.md": sha256_file(restore_guide_path),
         "staging/staging-index.json": sha256_file(staging_index_path),
     }
     checksum_path = root / "manifest" / "checksums.json"
@@ -87,6 +93,7 @@ def build_bundle_layout(output_dir: Path) -> dict:
         "checksum_path": str(checksum_path),
         "human_report_path": str(human_report_path),
         "staging_index_path": str(staging_index_path),
+        "restore_guide_path": str(restore_guide_path),
         "included_paths": included,
     }
 

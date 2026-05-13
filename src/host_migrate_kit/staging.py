@@ -10,6 +10,13 @@ SYSTEMD_DIRS = [
     Path('/lib/systemd/system'),
 ]
 
+SAFE_ETC_FILES = [
+    Path('/etc/os-release'),
+    Path('/etc/hostname'),
+    Path('/etc/hosts'),
+    Path('/etc/resolv.conf'),
+]
+
 
 def collect_systemd_units(target_dir: Path, unit_names: list[str]) -> list[dict[str, Any]]:
     target_dir.mkdir(parents=True, exist_ok=True)
@@ -56,6 +63,22 @@ def collect_crontab(target_dir: Path) -> dict[str, Any]:
         'found': True,
         'dest': str(dest),
     }
+
+
+def collect_safe_etc_files(target_dir: Path) -> list[dict[str, Any]]:
+    target_dir.mkdir(parents=True, exist_ok=True)
+    copied = []
+    for source in SAFE_ETC_FILES:
+        item = {
+            'path': str(source),
+            'found': source.exists(),
+        }
+        if source.exists():
+            dest = target_dir / source.name
+            shutil.copy2(source, dest)
+            item['dest'] = str(dest)
+        copied.append(item)
+    return copied
 
 
 def write_staging_index(target_dir: Path, payload: dict[str, Any]) -> Path:
