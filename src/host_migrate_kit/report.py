@@ -39,6 +39,15 @@ def build_human_report() -> str:
 
     lines += [
         '',
+        '## Capture policy',
+    ]
+    for name, item in manifest['capture_policy'].items():
+        lines.append(
+            f"- {name}: class={item['class']}, required_for_mvp={item['required_for_mvp']}, what={item['what']}"
+        )
+
+    lines += [
+        '',
         '## Gap check',
         f"- Status: {manifest['gap_check']['status']}",
         f"- Gap count: {manifest['gap_check']['gap_count']}",

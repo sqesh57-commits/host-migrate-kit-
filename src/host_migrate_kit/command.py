@@ -12,6 +12,7 @@ from .compat import run_compat_check
 from .manifest import build_manifest
 from .preflight import run_preflight
 from .schema import validate_manifest
+from .verify import run_bundle_verify
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -64,6 +65,10 @@ def build_parser() -> argparse.ArgumentParser:
     apply_plan = sub.add_parser("apply-plan", help="Построить dry-run план восстановления из bundle directory")
     apply_plan.add_argument("bundle_root", type=Path, help="Путь к корню bundle directory")
     apply_plan.add_argument("--pretty", action="store_true", help="Форматировать JSON с отступами")
+
+    verify_bundle = sub.add_parser("verify-bundle", help="Проверить полноту обязательных артефактов bundle")
+    verify_bundle.add_argument("bundle_root", type=Path, help="Путь к корню bundle directory")
+    verify_bundle.add_argument("--pretty", action="store_true", help="Форматировать JSON с отступами")
 
     return parser
 
@@ -130,6 +135,12 @@ def main() -> int:
 
     if args.command == "apply-plan":
         report = build_apply_plan(str(args.bundle_root))
+        text = json.dumps(report, ensure_ascii=False, indent=2 if args.pretty else None)
+        print(text)
+        return 0
+
+    if args.command == "verify-bundle":
+        report = run_bundle_verify(str(args.bundle_root))
         text = json.dumps(report, ensure_ascii=False, indent=2 if args.pretty else None)
         print(text)
         return 0
