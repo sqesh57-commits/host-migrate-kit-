@@ -26,6 +26,7 @@ def collect_systemd_units(target_dir: Path, unit_names: list[str]) -> list[dict[
         item = {
             'unit': unit,
             'found': source is not None,
+            'dropins': [],
         }
         if source is None:
             copied.append(item)
@@ -34,6 +35,7 @@ def collect_systemd_units(target_dir: Path, unit_names: list[str]) -> list[dict[
         shutil.copy2(source, dest)
         item['source'] = str(source)
         item['dest'] = str(dest)
+        item['dropins'] = collect_systemd_dropins(target_dir, unit)
         copied.append(item)
     return copied
 
@@ -44,6 +46,26 @@ def find_systemd_unit(name: str) -> Path | None:
         if candidate.exists():
             return candidate
     return None
+
+
+def collect_systemd_dropins(target_dir: Path, unit_name: str) -> list[dict[str, str]]:
+    copied = []
+    for base in SYSTEMD_DIRS:
+        dropin_dir = base / f'{unit_name}.d'
+        if not dropin_dir.exists() or not dropin_dir.is_dir():
+            continue
+        dest_dir = target_dir / f'{unit_name}.d'
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        for item in sorted(dropin_dir.iterdir()):
+            if not item.is_file():
+                continue
+            dest = dest_dir / item.name
+            shutil.copy2(item, dest)
+            copied.append({
+                'source': str(item),
+                'dest': str(dest),
+            })
+    return copied
 
 
 def collect_crontab(target_dir: Path) -> dict[str, Any]:

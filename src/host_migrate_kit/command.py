@@ -8,6 +8,7 @@ from .collectors.host import collect_host_inventory, collect_host_summary
 from .bundle import build_bundle_layout
 from .gapcheck import run_gap_check
 from .manifest import build_manifest
+from .schema import validate_manifest
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -47,6 +48,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     gap = sub.add_parser("gap-check", help="Проверить явные пробелы перед bundle/migration этапом")
     gap.add_argument("--pretty", action="store_true", help="Форматировать JSON с отступами")
+
+    validate = sub.add_parser("validate-manifest", help="Проверить структуру текущего manifest")
+    validate.add_argument("--pretty", action="store_true", help="Форматировать JSON с отступами")
 
     return parser
 
@@ -90,6 +94,12 @@ def main() -> int:
     if args.command == "gap-check":
         gap = run_gap_check()
         text = json.dumps(gap, ensure_ascii=False, indent=2 if args.pretty else None)
+        print(text)
+        return 0
+
+    if args.command == "validate-manifest":
+        validation = validate_manifest(build_manifest())
+        text = json.dumps(validation, ensure_ascii=False, indent=2 if args.pretty else None)
         print(text)
         return 0
 
