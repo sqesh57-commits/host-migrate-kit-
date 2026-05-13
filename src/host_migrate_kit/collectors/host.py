@@ -5,6 +5,7 @@ import socket
 import subprocess
 from pathlib import Path
 
+from .runtime import parse_failed_units, parse_logged_users, parse_passwd_users, parse_ssh_status
 from .system import detect_binaries, parse_apt_manual, parse_df, parse_timers
 
 
@@ -164,6 +165,10 @@ def collect_host_inventory() -> dict:
         },
         "runtime": {
             "binaries": detect_binaries(),
+            "logged_users": parse_logged_users(),
+            "local_users": parse_passwd_users(),
+            "failed_units": parse_failed_units(),
+            "ssh": parse_ssh_status(),
         },
         "roles": detect_roles(running_services),
         "checks": {

@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from .collectors.host import collect_host_inventory, collect_host_summary
+from .manifest import build_manifest
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -25,6 +26,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     inventory.add_argument("--pretty", action="store_true", help="Форматировать JSON с отступами")
 
+    manifest = sub.add_parser("manifest", help="Собрать краткий manifest хоста")
+    manifest.add_argument(
+        "--output",
+        type=Path,
+        help="Путь для сохранения manifest JSON",
+    )
+    manifest.add_argument("--pretty", action="store_true", help="Форматировать JSON с отступами")
+
     return parser
 
 
@@ -43,6 +52,15 @@ def main() -> int:
     if args.command == "inventory":
         inventory = collect_host_inventory()
         text = json.dumps(inventory, ensure_ascii=False, indent=2 if args.pretty else None)
+        if args.output:
+            args.output.write_text(text + "\n", encoding="utf-8")
+        else:
+            print(text)
+        return 0
+
+    if args.command == "manifest":
+        manifest = build_manifest()
+        text = json.dumps(manifest, ensure_ascii=False, indent=2 if args.pretty else None)
         if args.output:
             args.output.write_text(text + "\n", encoding="utf-8")
         else:
