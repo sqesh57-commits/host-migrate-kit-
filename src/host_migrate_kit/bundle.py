@@ -9,6 +9,7 @@ from .manifest import build_manifest
 from .report import build_human_report
 from .restore import build_restore_guide
 from .staging import collect_crontab, collect_safe_etc_files, collect_systemd_units, write_staging_index
+from .systemdstate import collect_systemd_state
 
 DEFAULT_DIRS = [
     "/etc",
@@ -70,6 +71,7 @@ def build_bundle_layout(output_dir: Path) -> dict:
         staging_dir,
         {
             'systemd_units': systemd_info,
+            'systemd_state': collect_systemd_state([item['unit'] for item in systemd_info]),
             'crontab': crontab_info,
             'safe_etc_files': etc_info,
         },

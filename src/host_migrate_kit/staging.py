@@ -5,6 +5,8 @@ import shutil
 from pathlib import Path
 from typing import Any
 
+from .systemdstate import collect_systemd_state
+
 SYSTEMD_DIRS = [
     Path('/etc/systemd/system'),
     Path('/lib/systemd/system'),
