@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import json
 import platform
 import socket
 import subprocess
 from pathlib import Path
+
+from .system import detect_binaries, parse_apt_manual, parse_df, parse_timers
 
 
 def run(command: list[str]) -> str:
@@ -153,6 +154,16 @@ def collect_host_inventory() -> dict:
         },
         "automation": {
             "crontab": cron_entries,
+            "timers": parse_timers(),
+        },
+        "storage": {
+            "filesystems": parse_df(),
+        },
+        "packages": {
+            "manual_apt": parse_apt_manual(),
+        },
+        "runtime": {
+            "binaries": detect_binaries(),
         },
         "roles": detect_roles(running_services),
         "checks": {
