@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from .apps import collect_app_paths
+from .classification import build_data_classification
 from .collectors.host import collect_host_inventory
 from .collectors.paths import collect_path_metadata
 from .gapcheck import run_gap_check
@@ -40,6 +41,7 @@ def build_manifest() -> dict:
         "paths": collect_path_metadata(),
         "apps": collect_app_paths(),
         "capture_policy": build_capture_policy(),
+        "data_classification": build_data_classification(),
         "checks": inventory["checks"],
         "gap_check": gap_check,
         "warnings": [gap["code"] for gap in gap_check["gaps"]],

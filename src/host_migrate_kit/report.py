@@ -48,6 +48,15 @@ def build_human_report() -> str:
 
     lines += [
         '',
+        '## Data classification',
+    ]
+    for cls, items in manifest['data_classification'].items():
+        lines.append(f'- {cls}:')
+        for item in items:
+            lines.append(f'  - {item}')
+
+    lines += [
+        '',
         '## Gap check',
         f"- Status: {manifest['gap_check']['status']}",
         f"- Gap count: {manifest['gap_check']['gap_count']}",
