@@ -19,6 +19,11 @@ SAFE_ETC_FILES = [
     Path('/etc/resolv.conf'),
 ]
 
+SAFE_APP_PATHS = [
+    Path('/home/sqesh/.openclaw/openclaw.json'),
+    Path('/home/sqesh/.openclaw/.env'),
+]
+
 
 def collect_systemd_units(target_dir: Path, unit_names: list[str]) -> list[dict[str, Any]]:
     target_dir.mkdir(parents=True, exist_ok=True)
@@ -98,6 +103,22 @@ def collect_safe_etc_files(target_dir: Path) -> list[dict[str, Any]]:
             'found': source.exists(),
         }
         if source.exists():
+            dest = target_dir / source.name
+            shutil.copy2(source, dest)
+            item['dest'] = str(dest)
+        copied.append(item)
+    return copied
+
+
+def collect_safe_app_files(target_dir: Path) -> list[dict[str, Any]]:
+    target_dir.mkdir(parents=True, exist_ok=True)
+    copied = []
+    for source in SAFE_APP_PATHS:
+        item = {
+            'path': str(source),
+            'found': source.exists(),
+        }
+        if source.exists() and source.is_file():
             dest = target_dir / source.name
             shutil.copy2(source, dest)
             item['dest'] = str(dest)

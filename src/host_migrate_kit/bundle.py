@@ -8,7 +8,7 @@ from pathlib import Path
 from .manifest import build_manifest
 from .report import build_human_report
 from .restore import build_restore_guide
-from .staging import collect_crontab, collect_safe_etc_files, collect_systemd_units, write_staging_index
+from .staging import collect_crontab, collect_safe_app_files, collect_safe_etc_files, collect_systemd_units, write_staging_index
 from .systemdstate import collect_systemd_state
 
 DEFAULT_DIRS = [
@@ -65,6 +65,7 @@ def build_bundle_layout(output_dir: Path) -> dict:
     systemd_info = collect_systemd_units(staging_dir / 'systemd', DEFAULT_UNITS)
     crontab_info = collect_crontab(staging_dir / 'cron')
     etc_info = collect_safe_etc_files(staging_dir / 'etc')
+    app_info = collect_safe_app_files(staging_dir / 'apps')
     restore_guide_path = root / 'reports' / 'restore-guide.md'
     restore_guide_path.write_text(build_restore_guide(), encoding='utf-8')
     staging_index_path = write_staging_index(
@@ -74,6 +75,7 @@ def build_bundle_layout(output_dir: Path) -> dict:
             'systemd_state': collect_systemd_state([item['unit'] for item in systemd_info]),
             'crontab': crontab_info,
             'safe_etc_files': etc_info,
+            'safe_app_files': app_info,
         },
     )
 
