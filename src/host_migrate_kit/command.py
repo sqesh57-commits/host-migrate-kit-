@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 
 from .collectors.host import collect_host_inventory, collect_host_summary
+from .bundle import build_bundle_layout
+from .gapcheck import run_gap_check
 from .manifest import build_manifest
 
 
@@ -33,6 +35,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="Путь для сохранения manifest JSON",
     )
     manifest.add_argument("--pretty", action="store_true", help="Форматировать JSON с отступами")
+
+    bundle = sub.add_parser("bundle-plan", help="Собрать dry-run layout будущего relocation bundle")
+    bundle.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("./dist"),
+        help="Каталог для генерации dry-run bundle layout",
+    )
+    bundle.add_argument("--pretty", action="store_true", help="Форматировать JSON с отступами")
+
+    gap = sub.add_parser("gap-check", help="Проверить явные пробелы перед bundle/migration этапом")
+    gap.add_argument("--pretty", action="store_true", help="Форматировать JSON с отступами")
 
     return parser
 
@@ -65,6 +79,18 @@ def main() -> int:
             args.output.write_text(text + "\n", encoding="utf-8")
         else:
             print(text)
+        return 0
+
+    if args.command == "bundle-plan":
+        bundle = build_bundle_layout(args.output_dir)
+        text = json.dumps(bundle, ensure_ascii=False, indent=2 if args.pretty else None)
+        print(text)
+        return 0
+
+    if args.command == "gap-check":
+        gap = run_gap_check()
+        text = json.dumps(gap, ensure_ascii=False, indent=2 if args.pretty else None)
+        print(text)
         return 0
 
     parser.error("Неизвестная команда")

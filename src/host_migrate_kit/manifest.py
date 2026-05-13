@@ -3,10 +3,12 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from .collectors.host import collect_host_inventory
+from .gapcheck import run_gap_check
 
 
 def build_manifest() -> dict:
     inventory = collect_host_inventory()
+    gap_check = run_gap_check()
     return {
         "manifest_version": 1,
         "generated_at": datetime.now(UTC).isoformat(),
@@ -33,5 +35,6 @@ def build_manifest() -> dict:
         },
         "runtime": inventory["runtime"],
         "checks": inventory["checks"],
-        "warnings": [],
+        "gap_check": gap_check,
+        "warnings": [gap["code"] for gap in gap_check["gaps"]],
     }
