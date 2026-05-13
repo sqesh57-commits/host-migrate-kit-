@@ -1,48 +1,100 @@
 # ROADMAP: host-migrate-kit-
 
-## Phase 0. Project foundation
+Этот документ описывает этапы развития проекта, их смысл и причины выбора именно такой последовательности.
 
-Goal:
-- create repository skeleton
-- document purpose, constraints, and MVP
-- lock the Debian-first architecture direction
+Главная идея roadmap: не пытаться сразу построить “универсальную миграционную платформу”, а идти слоями, где каждый следующий этап опирается на предыдущий.
 
-Deliverables:
+## Почему roadmap разбит на фазы?
+
+Потому что задача многослойная:
+- сначала нужно понять, что вообще есть на сервере
+- потом это нужно формализовать
+- потом научиться это собирать
+- потом описать восстановление
+- потом проверять переносимость и полноту
+
+Если перепрыгнуть через ранние фазы, дальше проект быстро упрётся в хаос:
+- bundle будет собираться без чёткого понимания состава
+- restore guide будет писаться на догадках
+- migration checks станут проверять неясную модель
+
+## Phase 0. Основание проекта
+
+### Что это?
+Этап, на котором проект получает имя, границы, цель, минимальную архитектуру и основные документы.
+
+### Для чего это нужно?
+Чтобы не начинать писать код в пустоту, без договорённости о том, что вообще считается результатом.
+
+### Зачем это нужно?
+Без этого проект быстро превращается в набор разрозненных утилит и заметок без общей модели.
+
+### Почему такой выбор?
+Потому что для инфраструктурных инструментов архитектурная ясность на старте особенно важна: позднее исправление модели хранения артефактов и форматов отчётов обычно обходится дорого.
+
+### Deliverables
 - README
 - ТЗ
 - roadmap
-- initial package/layout decision
+- базовое решение по структуре репозитория
 
-## Phase 1. Host audit and inventory
+## Phase 1. Аудит хоста и inventory
 
-Goal:
-- gather reliable read-only host facts
+### Что это?
+Первый прикладной этап: инструмент начинает читать хост и собирать факты о нём.
 
-Scope:
+### Для чего это нужно?
+Чтобы зафиксировать реальное состояние сервера, а не опираться на предположения.
+
+### Зачем это нужно?
+Нельзя корректно строить migration bundle, если заранее не понятно:
+- какие сервисы реально важны
+- какие процессы слушают порты
+- что включено в systemd
+- какие cron/timer механизмы задействованы
+- есть ли Docker и persistent volumes
+
+### Почему такой выбор?
+Потому что inventory — это фундамент для всех последующих этапов. Всё остальное должно строиться на структурированных фактах.
+
+### Scope
 - OS / kernel metadata
 - listening ports
-- running and enabled systemd services
+- running/enabled systemd services
 - timers and cron jobs
 - Docker / containerd presence
 - disk usage
 - selected network/firewall state
 - important top-level paths
 
-Deliverables:
+### Deliverables
 - `hmk-audit`
 - `hmk-inventory`
-- JSON inventory schema draft
-- human-readable audit summary
+- draft JSON schema для inventory
+- human-readable summary
 
-Success criteria:
-- tool can inspect a Debian VPS and produce useful structured output without modifying host state
+### Success criteria
+Инструмент без изменения состояния хоста умеет собрать полезный и понятный inventory с Debian VPS.
 
-## Phase 2. Manifest model
+## Phase 2. Модель manifest
 
-Goal:
-- define the canonical machine-readable representation of migration state
+### Что это?
+Этап, где проект получает каноническое описание состояния миграции в machine-readable виде.
 
-Scope:
+### Для чего это нужно?
+Чтобы все остальные части проекта работали с одной и той же моделью данных.
+
+### Зачем это нужно?
+Если нет manifest-модели, то:
+- bundle трудно валидировать
+- сложно понимать, что именно попало в сборку
+- diff между двумя состояниями становится неявным
+- restore automation в будущем будет строиться на песке
+
+### Почему такой выбор?
+Manifest — это источник истины для bundle, restore и migration checks. Поэтому его лучше проектировать рано, а не “потом как-нибудь”.
+
+### Scope
 - host metadata
 - services
 - ports
@@ -52,127 +104,182 @@ Scope:
 - warnings and unresolved items
 - checksums and collection metadata
 
-Deliverables:
-- manifest schema draft
-- manifest generator
-- validation logic
+### Deliverables
+- схема manifest
+- генератор manifest
+- валидация структуры
 
-Success criteria:
-- repeated runs produce predictable manifest structure suitable for bundle assembly and restore planning
+### Success criteria
+Повторные запуски дают предсказуемый, структурированный manifest, пригодный для сборки bundle и планирования восстановления.
 
-## Phase 3. Relocation bundle assembly
+## Phase 3. Сборка relocation bundle
 
-Goal:
-- collect critical configuration and selected data into a portable bundle
+### Что это?
+Этап, где проект начинает не только описывать сервер, но и собирать его переносимые артефакты.
 
-Scope:
-- configs from `/etc`, user configs, and app-specific paths
+### Для чего это нужно?
+Чтобы из inventory и manifest получился практический результат, который можно увезти на другой VPS.
+
+### Зачем это нужно?
+Потому что хороший отчёт о сервере ещё не равен возможности восстановить сервер.
+
+### Почему такой выбор?
+После аудита и manifest уже достаточно информации, чтобы начать собирать bundle осмысленно, а не вслепую.
+
+### Scope
+- configs из `/etc`, user configs и app-specific paths
 - systemd unit export
 - cron export
 - selected data paths
-- Docker-related metadata and volume support foundations
+- Docker metadata foundations
 - checksums
 - staged bundle layout
 
-Deliverables:
+### Deliverables
 - `hmk-bundle`
-- bundle directory layout
+- структура bundle directory
 - `checksums.txt`
-- include/exclude config support
+- include/exclude support
 
-Success criteria:
-- tool can produce a structured relocation bundle that is inspectable and archivable
+### Success criteria
+Проект умеет собрать inspectable relocation bundle, который можно архивировать, переносить и проверять.
 
-## Phase 4. Restore documentation
+## Phase 4. Документация восстановления
 
-Goal:
-- help a human restore the stack on a clean Debian VPS
+### Что это?
+Этап, где проект начинает объяснять, как применять собранный bundle на новом сервере.
 
-Scope:
+### Для чего это нужно?
+Чтобы восстановление не зависело от памяти владельца и не превращалось в ручную импровизацию.
+
+### Зачем это нужно?
+Даже хороший bundle бесполезен, если нет понятного порядка:
+- что ставить первым
+- что разворачивать вторым
+- какие секреты нужны
+- как проверять успешность
+
+### Почему такой выбор?
+Restore guide логично строить после того, как уже понятны inventory и структура bundle.
+
+### Scope
 - generated restore checklist
 - host preparation steps
 - restore ordering
 - post-restore validation hints
-- caveats for secrets, ports, and service dependencies
+- notes about secrets, ports, and dependencies
 
-Deliverables:
-- generated `restore-guide.md`
-- templates for restore notes
+### Deliverables
+- `restore-guide.md`
+- шаблоны restore notes
 
-Success criteria:
-- a human can restore the audited stack on a clean Debian host using the generated bundle plus guide
+### Success criteria
+Человек может восстановить стек на чистом Debian VPS, имея bundle и generated guide.
 
-## Phase 5. Docker volume support
+## Phase 5. Поддержка Docker volumes
 
-Goal:
-- make future Docker-heavy migrations practical
+### Что это?
+Этап углубления в Docker persistence.
 
-Scope:
+### Для чего это нужно?
+Чтобы проект был действительно полезен, когда на сервере начнут накапливаться контейнеры и данные в volumes.
+
+### Зачем это нужно?
+В Docker-инфраструктуре именно persistent data чаще всего и является самым ценным и самым легко теряемым слоем.
+
+### Почему этот этап не раньше?
+Потому что сначала нужно иметь общую модель inventory, manifest и bundle, а уже потом углубляться в частный, но очень важный слой Docker persistence.
+
+### Scope
 - enumerate volumes
 - map volumes to containers/projects
 - export volume metadata
-- optionally archive volumes into the bundle
-- document consistency limitations for live databases
+- optionally archive volumes
+- warnings for live databases and consistency risks
 
-Deliverables:
+### Deliverables
 - Docker volume collector
 - archive strategy for named volumes and bind mounts
-- warnings for stateful databases
+- consistency notes
 
-Success criteria:
-- Docker workloads and their persistent data become first-class citizens in the relocation bundle
+### Success criteria
+Docker workloads и их persistent data становятся полноценной частью relocation bundle.
 
 ## Phase 6. Migration checks
 
-Goal:
-- reduce migration surprises
+### Что это?
+Этап валидации и снижения рисков.
 
-Scope:
+### Для чего это нужно?
+Чтобы находить проблемы до переезда, а не после него.
+
+### Зачем это нужно?
+Переезд ломается не только из-за отсутствия файлов, но и из-за невидимых несовместимостей:
+- забытые зависимости
+- неполный bundle
+- отсутствующие порты
+- неготовый target VPS
+
+### Почему этот этап после bundle и restore guide?
+Потому что проверять нужно уже относительно сформированной модели и ожидаемого процесса восстановления.
+
+### Scope
 - source host readiness checks
 - bundle completeness checks
 - target VPS readiness checks
 - post-restore smoke checks
 
-Deliverables:
+### Deliverables
 - `hmk-restore-check`
 - warning/error severity model
-- migration readiness report
+- readiness report
 
-Success criteria:
-- operator gets actionable feedback before and after migration
+### Success criteria
+Оператор получает actionable feedback до и после миграции.
 
-## Phase 7. Backup strategy integration
+## Phase 7. Интеграция backup strategy
 
-Goal:
-- define a repeatable backup workflow instead of one-off bundle creation
+### Что это?
+Этап превращения разовой миграционной утилиты в инструмент регулярной готовности к переезду.
 
-Scope:
+### Для чего это нужно?
+Чтобы relocation bundle не собирался только “когда уже горит”, а существовал как поддерживаемый процесс.
+
+### Зачем это нужно?
+Потому что лучший migration plan — тот, который уже заранее обкатан и регулярно обновляется.
+
+### Почему это финальная фаза MVP-цикла?
+Потому что сначала должен появиться рабочий способ audit → inventory → bundle → restore, и только потом имеет смысл формализовать регулярные бэкапы и retention.
+
+### Scope
 - local archive strategy
 - optional encrypted offsite backup backend
 - retention strategy
 - scheduled runs
 - run artifacts and logs
 
-Deliverables:
+### Deliverables
 - backup strategy doc
 - config examples
 - optional scheduled-run templates
 
-Success criteria:
-- project supports both emergency relocation and routine backup hygiene
+### Success criteria
+Проект помогает не только эвакуироваться один раз, но и поддерживать постоянную миграционную готовность.
 
-## Deferred / future ideas
+## Отложенные идеи
 
-- Ubuntu compatibility layer
+Это важно, но не обязательно для первого рабочего релиза:
+- слой совместимости для Ubuntu
 - provider-specific restore notes
 - remote source-to-target migration mode
 - optional restic backend integration
-- richer diffing between audit runs
+- richer diff between audit runs
 - secret redaction helpers
 - database-aware collectors and dumps
 
-## Recommended implementation order
+## Почему именно такой порядок реализации?
 
+Рекомендуемый порядок:
 1. Phase 0
 2. Phase 1
 3. Phase 2
@@ -182,9 +289,13 @@ Success criteria:
 7. Phase 5
 8. Phase 7
 
-Rationale:
-- first understand the host
-- then model it
-- then collect it
-- then document restore
-- then add richer migration safety and Docker depth
+### Обоснование
+- сначала нужно увидеть хост
+- потом описать его моделью
+- потом собрать bundle
+- потом понять восстановление
+- потом проверить готовность миграции
+- потом углубиться в Docker persistence
+- потом автоматизировать регулярный backup lifecycle
+
+Это снижает риск того, что проект слишком рано уйдёт в сложность без рабочего результата.

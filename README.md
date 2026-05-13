@@ -1,41 +1,106 @@
 # host-migrate-kit-
 
-Portable toolkit for auditing a Debian-oriented VPS, collecting critical configuration and data, and preparing a relocation bundle for fast recovery on a clean host.
+`host-migrate-kit-` — это переносимый набор инструментов для аудита Debian-oriented VPS, сбора критически важных конфигураций и данных, а также подготовки relocation bundle для быстрого восстановления на новом чистом сервере.
 
-## Goal
+## Что это?
 
-Preserve critical data and configuration for backup and fast redeployment on another VPS with a clean Debian-oriented system.
+Это не snapshot-система и не полный образ диска.
 
-## Why this exists
+Это проект, который помогает ответить на практический вопрос:
 
-Typical VPS backups solve only part of the problem:
-- snapshots are fast but often not portable across providers
-- raw file backups miss service topology and restore order
-- mixed hosts with systemd services, Docker workloads, cron jobs, and custom app state need more than a tarball
+> Что именно нужно сохранить с текущего VPS, чтобы потом можно было быстро и предсказуемо развернуть всё на другом сервере?
 
-`host-migrate-kit-` is meant to provide a practical middle path:
-- inspect what is really running
-- capture critical state in a structured way
-- generate a relocation bundle with machine-readable manifest and human-readable restore notes
-- help validate migration readiness before and after a move
+Проект должен уметь:
+- понять, что реально поднято на хосте
+- выделить критически важные конфиги, сервисы и данные
+- собрать это в переносимый набор артефактов
+- помочь человеку восстановить всё на новом VPS с чистой Debian-oriented системой
 
-## Scope
+## Для чего это нужно?
 
-Debian-oriented systems first:
+У типичного VPS есть несколько проблем:
+- snapshot быстрый, но часто привязан к конкретному провайдеру
+- raw-backup файлов не объясняет, как всё было связано между собой
+- на сервере обычно смешаны:
+  - systemd-сервисы
+  - Docker-контейнеры
+  - cron-задачи
+  - сетевые правила
+  - данные приложений
+  - секреты
+- при переезде на другой VPS нужно не просто сохранить файлы, а понять порядок восстановления
+
+`host-migrate-kit-` нужен для того, чтобы переезд не превращался в археологию и ручное вспоминание, что где лежало и в каком порядке запускалось.
+
+## Зачем делать отдельный проект?
+
+Потому что задача уже выходит далеко за рамки обычного “сделай бэкап”.
+
+Здесь нужен полноценный подход:
+- аудит хоста
+- inventory
+- стратегия бэкапа
+- relocation bundle
+- manifest
+- restore guide
+- миграционные проверки
+
+Если этого не оформить как отдельный проект, всё быстро расползётся по случайным скриптам, заметкам и одноразовым командам. В критический момент это обычно и ломается.
+
+## Почему выбран именно такой подход?
+
+### Почему не делаем ставку только на snapshot?
+
+Потому что snapshot:
+- удобен как аварийная страховка
+- но часто плохо переносится между провайдерами
+- не помогает, если новый VPS будет в другой стране или у другого хостера
+- не всегда доступен для импорта как custom image
+
+### Почему не ограничиваемся обычным архивом конфигов?
+
+Потому что просто архив не отвечает на вопросы:
+- какие сервисы реально были запущены
+- какие unit-файлы были включены
+- какие volumes были привязаны к контейнерам
+- какие порты должны слушаться
+- что восстанавливать в первую очередь
+
+### Почему relocation bundle?
+
+Relocation bundle — это компромисс между “полным образом диска” и “просто пачкой файлов”.
+
+Он должен содержать:
+- конфиги
+- данные
+- manifest
+- checksums
+- restore guide
+- служебную информацию для ручного или полуавтоматического восстановления
+
+Это делает сервер переносимым, а не просто архивируемым.
+
+## Цель проекта
+
+Сохранение критически важных данных и конфигурации для бэкапа и быстрого развертывания на другом VPS с чистой Debian-oriented системой.
+
+## Область применения
+
+На первом этапе проект ориентирован на:
 - Debian 12+
-- Ubuntu and similar systemd-based derivatives later, where compatible
+- systemd-based Linux
+- VPS с mixed-host нагрузкой
 
-Primary workload types:
-- systemd-managed services
-- Docker and Docker Compose workloads
-- cron jobs and timers
-- host-level application state
-- network and firewall state
-- custom directories such as `/opt/...`, app data, and user-owned config
+Под mixed-host понимается сервер, где могут одновременно жить:
+- systemd-сервисы
+- Docker / Docker Compose
+- cron-задачи
+- каталоги приложений в `/opt`, `/srv`, `/home/...`
+- данные ботов, прокси, LLM-обвязки, automation-проектов
 
-## MVP
+## Что входит в MVP?
 
-- host audit
+- аудит хоста
 - inventory
 - relocation bundle
 - backup strategy
@@ -45,61 +110,107 @@ Primary workload types:
 - manifest generation
 - migration checks
 
-## Design principles
+## Что означает каждый пункт MVP?
 
-- Debian-first, not universal-Linux-first
-- portability over provider-specific snapshots
-- machine-readable outputs plus human-readable reports
-- minimal assumptions about the target VPS
-- explicit manifests and checksums
-- safe-by-default, read-only collection unless explicitly asked otherwise
-- mixed-host support, not Docker-only and not systemd-only
+### Аудит хоста
+Нужен, чтобы понять текущее состояние сервера: что запущено, что слушает порты, какие сервисы критичны, какие подсистемы вообще используются.
 
-## Planned architecture
+### Inventory
+Нужен, чтобы превратить разрозненные данные в структурированную модель: сервисы, порты, таймеры, cron, volumes, пути данных, зависимости.
+
+### Relocation bundle
+Нужен, чтобы собрать всё действительно важное в один переносимый комплект артефактов.
+
+### Backup strategy
+Нужна, потому что один раз собрать bundle мало. Нужно понимать, как повторять процесс регулярно и безопасно.
+
+### Restore guide
+Нужен, чтобы восстановление не зависело от памяти владельца сервера или автора скриптов.
+
+### Docker volume support
+Нужен, потому что по мере роста проекта именно persistent data контейнеров почти всегда становится критичной.
+
+### systemd export
+Нужен, потому что на Debian-oriented VPS systemd — это один из главных источников истины о сервисах и порядке их запуска.
+
+### Manifest generation
+Нужен, чтобы результат был пригоден не только человеку, но и для автоматической проверки, diff, валидации и дальнейшей автоматизации.
+
+### Migration checks
+Нужны, чтобы заранее видеть дыры в переносимости, а не находить их уже после падения старого VPS.
+
+## Ключевые принципы проекта
+
+### Debian-first
+Проект намеренно не пытается с первого дня поддерживать “любой Linux”.
+
+Почему:
+- это резко усложняет реализацию
+- даёт много ложной универсальности
+- мешает сделать хороший, надёжный MVP
+
+Выбор в пользу Debian-oriented систем сделан потому, что именно под них сейчас есть реальная задача и реальные данные.
+
+### Portability first
+Главная цель — переносимость между VPS, а не идеальный бэкап внутри одного провайдера.
+
+### Read-only by default
+Сбор информации должен быть безопасным. По умолчанию проект должен читать и фиксировать состояние, а не менять его.
+
+### Machine-readable + human-readable
+Результат должен быть полезен и человеку, и автоматике.
+
+То есть нужны:
+- JSON manifest / inventory
+- Markdown restore guide / summary
+
+### Явные артефакты вместо магии
+Лучше иметь:
+- manifest
+- checksums
+- список включённых путей
+- warnings
+
+чем “умный чёрный ящик”, который что-то там собрал, но никто не понимает что именно.
+
+## Предполагаемая структура проекта
 
 - `src/host_migrate_kit/`
-  - core CLI and orchestration
-  - collectors for systemd, Docker, network, cron, app paths
+  - core CLI и orchestration
+  - collectors для systemd, Docker, network, cron, app paths
   - manifest generation
   - bundle assembly
   - restore validation
 - `docs/`
-  - architecture decisions
-  - technical specification
+  - архитектурные решения
+  - техническая спецификация
   - roadmap
-  - restore model
+  - модель восстановления
 - `examples/`
-  - sample config and include/exclude lists
+  - примеры конфигурации
+  - include/exclude lists
 - `tests/`
-  - unit tests for manifests, path resolution, bundle layout, and collectors
+  - unit tests и integration-lite тесты
 
-## Expected outputs
+## Какие артефакты должен уметь создавать проект?
 
-Typical run artifacts should include:
-- structured inventory JSON
-- bundle manifest JSON
-- human-readable audit summary
-- relocation archive or staged bundle directory
+Ожидаемые результаты работы:
+- структурированный inventory JSON
+- manifest JSON
+- человекочитаемый audit summary
+- staged relocation bundle directory или archive
 - checksums
-- restore checklist
+- restore checklist / restore guide
 
-## Non-goals for MVP
+## Что сознательно не входит в MVP?
 
-- full bare-metal image cloning
-- hypervisor-specific image import/export automation
-- cross-distro universal compatibility
-- automatic production restore without review
+- full disk imaging
+- bare-metal cloning
+- привязка к конкретному провайдеру
+- автоматический restore без проверки человеком
+- попытка сразу поддерживать все Linux-дистрибутивы
 
-## Initial target use case
+## Ближайшие документы
 
-A mixed Debian VPS running:
-- OpenClaw
-- Hiddify / hcore-like services
-- Ollama
-- cron-based automation
-- future Dockerized bots and helper services
-
-## Next documents
-
-- `TZ.md` for technical requirements
-- `ROADMAP.md` for phased implementation plan
+- `TZ.md` — подробное техническое задание
+- `ROADMAP.md` — этапы реализации
