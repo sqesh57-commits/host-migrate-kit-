@@ -1,0 +1,10 @@
+README.md
+pyproject.toml
+src/host_migrate_kit/__init__.py
+src/host_migrate_kit/command.py
+src/host_migrate_kit.egg-info/PKG-INFO
+src/host_migrate_kit.egg-info/SOURCES.txt
+src/host_migrate_kit.egg-info/dependency_links.txt
+src/host_migrate_kit.egg-info/entry_points.txt
+src/host_migrate_kit.egg-info/top_level.txt
+src/host_migrate_kit/collectors/host.py
