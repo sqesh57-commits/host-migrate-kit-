@@ -7,11 +7,21 @@ from pathlib import Path
 
 from .manifest import build_manifest
 from .report import build_human_report
+from .staging import collect_crontab, collect_systemd_units, write_staging_index
 
 DEFAULT_DIRS = [
     "/etc",
     "/home",
     "/opt",
+]
+
+DEFAULT_UNITS = [
+    "ssh.service",
+    "docker.service",
+    "containerd.service",
+    "ollama.service",
+    "hiddify.service",
+    "hcore.service",
 ]
 
 
@@ -49,10 +59,22 @@ def build_bundle_layout(output_dir: Path) -> dict:
     human_report_path = root / "reports" / "summary.md"
     human_report_path.write_text(build_human_report(), encoding="utf-8")
 
+    staging_dir = root / 'staging'
+    systemd_info = collect_systemd_units(staging_dir / 'systemd', DEFAULT_UNITS)
+    crontab_info = collect_crontab(staging_dir / 'cron')
+    staging_index_path = write_staging_index(
+        staging_dir,
+        {
+            'systemd_units': systemd_info,
+            'crontab': crontab_info,
+        },
+    )
+
     checksums = {
         "manifest/manifest.json": sha256_file(manifest_path),
         "reports/bundle-plan.json": sha256_file(report_path),
         "reports/summary.md": sha256_file(human_report_path),
+        "staging/staging-index.json": sha256_file(staging_index_path),
     }
     checksum_path = root / "manifest" / "checksums.json"
     checksum_path.write_text(json.dumps(checksums, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -64,6 +86,7 @@ def build_bundle_layout(output_dir: Path) -> dict:
         "report_path": str(report_path),
         "checksum_path": str(checksum_path),
         "human_report_path": str(human_report_path),
+        "staging_index_path": str(staging_index_path),
         "included_paths": included,
     }
 
